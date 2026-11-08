@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <limine.h>
 #include "serial.h"
+#include "console.h"
 
 __attribute__((used, section(".limine_requests")))
 static volatile LIMINE_BASE_REVISION(3);
@@ -23,11 +24,6 @@ static void halt(void) {
     for (;;) {
         __asm__ volatile ("cli; hlt");
     }
-}
-
-static void put_pixel(struct limine_framebuffer *fb, uint64_t x, uint64_t y, uint32_t color) {
-    volatile uint32_t *pixels = fb->address;
-    pixels[y * (fb->pitch / 4) + x] = color;
 }
 
 void kmain(void) {
@@ -54,15 +50,20 @@ void kmain(void) {
     serial_puthex(fb->height);
     serial_puts("\n");
 
-    for (uint64_t y = 0; y < fb->height; y++) {
-        for (uint64_t x = 0; x < fb->width; x++) {
-            uint8_t r = (uint8_t)(x * 255 / fb->width);
-            uint8_t g = (uint8_t)(y * 255 / fb->height);
-            uint8_t b = 0x80;
-            put_pixel(fb, x, y, ((uint32_t)r << 16) | ((uint32_t)g << 8) | b);
-        }
+    if (!console_init(fb)) {
+        serial_puts("[Quorv-OS] ERRO: fonte invalida\n");
+        halt();
     }
 
-    serial_puts("[Quorv-OS] Tela desenhada. Parando a CPU.\n");
+    console_set_color(0x0000AAFF, 0x00101820);
+    console_clear();
+    console_puts("Quorv-OS\n");
+    console_set_color(0x00CCCCCC, 0x00101820);
+    console_puts("========\n\n");
+    console_puts("Kernel x86_64 iniciado pelo Limine.\n");
+    console_puts("Texto desenhado pixel a pixel com uma fonte PSF.\n\n");
+    console_puts("Tab:\tA\tB\tC\n");
+
+    serial_puts("[Quorv-OS] Texto escrito. Parando a CPU.\n");
     halt();
 }

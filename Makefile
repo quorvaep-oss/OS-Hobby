@@ -12,7 +12,9 @@ LDFLAGS := -nostdlib -static -z max-page-size=0x1000 -T kernel/linker.ld
 
 BUILD   := build
 SRCS    := $(wildcard kernel/src/*.c)
-OBJS    := $(patsubst kernel/src/%.c,$(BUILD)/%.o,$(SRCS))
+ASMS	:= $(wildcard kernel/src/*.S)
+OBJS    := $(patsubst kernel/src/%.c,$(BUILD)/%.o,$(SRCS)) \
+	   $(patsubst kernel/src/%.S,$(BUILD)/%.o,$(ASMS))
 KERNEL  := $(BUILD)/kernel.elf
 ISO     := $(BUILD)/quorv-os.iso
 
@@ -26,6 +28,10 @@ all: $(KERNEL)
 $(BUILD)/%.o: kernel/src/%.c
 	@mkdir -p $(BUILD)
 	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD)/%.o: kernel/src/%.S
+	@mkdir -p $(BUILD)
+	$(CC) $(TARGET) -c $< -o $@
 
 $(KERNEL): $(OBJS) kernel/linker.ld
 	$(LD) $(LDFLAGS) $(OBJS) -o $@

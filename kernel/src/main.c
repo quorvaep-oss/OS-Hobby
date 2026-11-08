@@ -6,6 +6,7 @@
 #include "console.h"
 #include "kprintf.h"
 #include "gdt.h"
+#include "idt.h"
 
 __attribute__((used, section(".limine_requests")))
 static volatile LIMINE_BASE_REVISION(3);
@@ -61,16 +62,16 @@ void kmain(void) {
     kprintf("Framebuffer: %lux%lu pixels, %u bits por pixel, em %p\n\n",
             fb->width, fb->height, fb->bpp, fb->address);
 
-    uint16_t cs, ds;
-    __asm__ volatile ("mov %%cs, %0" : "=r"(cs));
-    __asm__ volatile ("mov %%ds, %0" : "=r"(ds));
-    kprintf("[GDT] antes  (Limine): CS = 0x%02x, DS = 0x%02x\n", cs, ds);
-
     gdt_init();
+    kprintf("[GDT] carregada\n");
 
-    __asm__ volatile ("mov %%cs, %0" : "=r"(cs));
-    __asm__ volatile ("mov %%ds, %0" : "=r"(ds));
-    kprintf("[GDT] depois (nossa):  CS = 0x%02x, DS = 0x%02x\n", cs, ds);
+    idt_init();
+    kprintf("[IDT] carregada com 32 excecoes\n");
+
+    kprintf("Provocando uma divisao por zero...\n");
+    volatile int zero = 0;
+    volatile int resultado = 10 / zero;
+    (void)resultado;
 
     serial_puts("[Quorv-OS] Texto escrito. Parando a CPU.\n");
     halt();

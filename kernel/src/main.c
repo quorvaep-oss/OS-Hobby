@@ -5,6 +5,7 @@
 #include "serial.h"
 #include "console.h"
 #include "kprintf.h"
+#include "gdt.h"
 
 __attribute__((used, section(".limine_requests")))
 static volatile LIMINE_BASE_REVISION(3);
@@ -60,14 +61,16 @@ void kmain(void) {
     kprintf("Framebuffer: %lux%lu pixels, %u bits por pixel, em %p\n\n",
             fb->width, fb->height, fb->bpp, fb->address);
 
-    kprintf("Teste do kprintf:\n");
-    kprintf("  %%d  -> %d e %d\n", 42, -42);
-    kprintf("  %%u  -> %u\n", 3000000000u);
-    kprintf("  %%x  -> %x   %%X -> %X\n", 0xbeef, 0xbeef);
-    kprintf("  %%08x -> %08x\n", 0x1f);
-    kprintf("  %%ld -> %ld\n", -9223372036854775807L - 1);
-    kprintf("  %%p  -> %p\n", (void *)kmain);
-    kprintf("  %%s  -> %s, %%c -> %c\n", "texto", 'Q');
+    uint16_t cs, ds;
+    __asm__ volatile ("mov %%cs, %0" : "=r"(cs));
+    __asm__ volatile ("mov %%ds, %0" : "=r"(ds));
+    kprintf("[GDT] antes  (Limine): CS = 0x%02x, DS = 0x%02x\n", cs, ds);
+
+    gdt_init();
+
+    __asm__ volatile ("mov %%cs, %0" : "=r"(cs));
+    __asm__ volatile ("mov %%ds, %0" : "=r"(ds));
+    kprintf("[GDT] depois (nossa):  CS = 0x%02x, DS = 0x%02x\n", cs, ds);
 
     serial_puts("[Quorv-OS] Texto escrito. Parando a CPU.\n");
     halt();

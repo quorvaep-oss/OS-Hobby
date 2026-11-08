@@ -101,6 +101,11 @@ void console_clear(void) {
 }
 
 void console_putc(char c) {
+    if (fb == NULL) {
+	return;
+    }
+
+
     switch (c) {
     case '\n':
         new_line();

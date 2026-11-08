@@ -4,6 +4,7 @@
 #include <limine.h>
 #include "serial.h"
 #include "console.h"
+#include "kprintf.h"
 
 __attribute__((used, section(".limine_requests")))
 static volatile LIMINE_BASE_REVISION(3);
@@ -42,27 +43,31 @@ void kmain(void) {
     }
 
     struct limine_framebuffer *fb = framebuffer_request.response->framebuffers[0];
-    serial_puts("[Quorv-OS] Framebuffer em ");
-    serial_puthex((unsigned long)fb->address);
-    serial_puts(", largura ");
-    serial_puthex(fb->width);
-    serial_puts(", altura ");
-    serial_puthex(fb->height);
-    serial_puts("\n");
 
     if (!console_init(fb)) {
-        serial_puts("[Quorv-OS] ERRO: fonte invalida\n");
-        halt();
+	serial_puts("[Quorv-OS] ERRO: fonte invalida\n");
+	halt();
     }
+
 
     console_set_color(0x0000AAFF, 0x00101820);
     console_clear();
     console_puts("Quorv-OS\n");
     console_set_color(0x00CCCCCC, 0x00101820);
     console_puts("========\n\n");
-    console_puts("Kernel x86_64 iniciado pelo Limine.\n");
-    console_puts("Texto desenhado pixel a pixel com uma fonte PSF.\n\n");
-    console_puts("Tab:\tA\tB\tC\n");
+
+    kprintf("Kernel x86_64 iniciado pelo Limine.\n");
+    kprintf("Framebuffer: %lux%lu pixels, %u bits por pixel, em %p\n\n",
+            fb->width, fb->height, fb->bpp, fb->address);
+
+    kprintf("Teste do kprintf:\n");
+    kprintf("  %%d  -> %d e %d\n", 42, -42);
+    kprintf("  %%u  -> %u\n", 3000000000u);
+    kprintf("  %%x  -> %x   %%X -> %X\n", 0xbeef, 0xbeef);
+    kprintf("  %%08x -> %08x\n", 0x1f);
+    kprintf("  %%ld -> %ld\n", -9223372036854775807L - 1);
+    kprintf("  %%p  -> %p\n", (void *)kmain);
+    kprintf("  %%s  -> %s, %%c -> %c\n", "texto", 'Q');
 
     serial_puts("[Quorv-OS] Texto escrito. Parando a CPU.\n");
     halt();
